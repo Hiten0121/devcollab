@@ -94,3 +94,9 @@ The server will launch at `http://localhost:8080`.
 
 ## 🛡️ License
 Distributed under the MIT License. See `LICENSE` for more information.
+
+## 📸 Output & Preview (Sample)
+
+Here is a preview of the **DevCollab** interface and project cards:
+<img width="1908" height="901" alt="Screenshot 2026-09-11 144914" src="https://github.com/user-attachments/assets/cf27cd72-5b11-47ff-a3cf-fe7674394d6c" />
+
