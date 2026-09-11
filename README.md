@@ -35,6 +35,62 @@ Follow these instructions to run the **DevCollab** backend locally on your machi
 
 ### 1. Clone the Repository
 ```bash
-git clone [https://github.com/your-username/devcollab.git](https://github.com/your-username/devcollab.git)
+git clone https://github.com/your-username/devcollab.git
 cd devcollab
+```
 
+### 2. Configure Database & Properties
+Update your `src/main/resources/application.properties` with your PostgreSQL database credentials and JWT secret key:
+
+```properties
+spring.datasource.url=jdbc:postgresql://your-supabase-host:5432/postgres
+spring.datasource.username=postgres
+spring.datasource.password=your_db_password
+
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+
+# JWT Configuration
+jwt.secret=your_secure_jwt_secret_key_here_min_256_bits
+jwt.expiration=86400000
+```
+
+### 3. Build and Run via Maven
+Run the clean install command to compile the project and resolve all dependencies:
+
+```bash
+mvn clean install
+```
+
+Then, start the application:
+
+```bash
+mvn spring-boot:run
+```
+
+The server will launch at `http://localhost:8080`.
+
+---
+
+## 📌 API Endpoints Overview
+
+| Method | Endpoint | Description | Access Level |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/auth/register` | Register a new user account | Public |
+| `POST` | `/api/auth/login` | Authenticate user and return JWT | Public |
+| `GET` | `/api/projects` | Fetch all projects (optional `?tag=`) | Public |
+| `GET` | `/api/projects/{id}` | Get project details by ID | Public |
+| `POST` | `/api/projects` | Create a new project post | Authenticated (Bearer Token) |
+
+---
+
+## 💡 Future Enhancements
+* Interactive comment sections on project posts.
+* Dedicated developer profile pages showcasing individual portfolios.
+* Advanced keyword search and pagination support.
+
+---
+
+## 🛡️ License
+Distributed under the MIT License. See `LICENSE` for more information.
