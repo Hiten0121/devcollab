@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevCollab - Developer Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans min-h-screen antialiased selection:bg-emerald-500 selection:text-white">
+
+    <!-- Navbar -->
+    <header class="border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <span class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">🌱 DevCollab</span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button onclick="openModal()" class="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white px-4 py-2 rounded-xl text-sm font-medium shadow-lg shadow-emerald-600/20 transition-all duration-200">Post a Project</button>
+                <div id="authArea"></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Layout -->
+    <div class="max-w-7xl mx-auto px-6 py-8 grid grid-cols-1 md:grid-cols-4 gap-8">
+        
+        <!-- Sidebar Filtering -->
+        <aside class="space-y-6 md:sticky md:top-24 h-fit">
+            <div>
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider px-3 mb-3">Feeds</h3>
+                <div class="space-y-1">
+                    <button onclick="filterProjects('', this)" class="filter-btn w-full text-left px-3 py-2.5 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200 text-sm font-medium transition-all">All Projects</button>
+                </div>
+            </div>
+
+            <div>
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider px-3 mb-3">Technologies</h3>
+                <div class="space-y-1">
+                    <button onclick="filterProjects('Java', this)" class="filter-btn w-full text-left px-3 py-2.5 rounded-xl hover:bg-slate-100 text-slate-600 hover:text-slate-900 text-sm font-medium transition-all">Java Development</button>
+                    <button onclick="filterProjects('Spring Boot', this)" class="filter-btn w-full text-left px-3 py-2.5 rounded-xl hover:bg-slate-100 text-slate-600 hover:text-slate-900 text-sm font-medium transition-all">Spring Boot</button>
+                    <button onclick="filterProjects('React', this)" class="filter-btn w-full text-left px-3 py-2.5 rounded-xl hover:bg-slate-100 text-slate-600 hover:text-slate-900 text-sm font-medium transition-all">React Frontend</button>
+                    <button onclick="filterProjects('DevOps', this)" class="filter-btn w-full text-left px-3 py-2.5 rounded-xl hover:bg-slate-100 text-slate-600 hover:text-slate-900 text-sm font-medium transition-all">DevOps & Cloud</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Project Feed Grid -->
+        <main class="md:col-span-3">
+            <div id="projectGrid" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <!-- Injected via JavaScript -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Post Project Modal -->
+    <div id="projectModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-white border border-slate-200 w-full max-w-lg p-6 rounded-2xl space-y-4 shadow-2xl shadow-slate-900/10">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                <h2 class="text-lg font-bold text-slate-900">Post a New Project</h2>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+            </div>
+            <input id="pTitle" type="text" placeholder="Project Title" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-emerald-500 transition">
+            <textarea id="pDesc" rows="3" placeholder="Project Description" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-emerald-500 transition resize-none"></textarea>
+            <input id="pTech" type="text" placeholder="Tech Stack (comma separated e.g. Java, Spring Boot)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-emerald-500 transition">
+            <input id="pRepo" type="text" placeholder="GitHub Repository URL" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-emerald-500 transition">
+            <div class="flex justify-end space-x-3 pt-3 border-t border-slate-100">
+                <button onclick="closeModal()" class="px-4 py-2.5 rounded-xl text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition">Cancel</button>
+                <button onclick="submitProject()" class="px-5 py-2.5 rounded-xl text-sm bg-emerald-600 hover:bg-emerald-500 text-white font-medium shadow-lg shadow-emerald-600/20 transition">Publish Project</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Logic Script -->
+    <script>
+        const API_BASE = 'http://localhost:8080/api';
+        let currentToken = localStorage.getItem('jwt');
+
+        // Setup Axios Interceptor
+        axios.interceptors.request.use(config => {
+            if (currentToken) {
+                config.headers.Authorization = `Bearer ${currentToken}`;
+            }
+            return config;
+        });
+
+        function checkAuth() {
+            const authArea = document.getElementById('authArea');
+            if (currentToken) {
+                authArea.innerHTML = `<button onclick="logout()" class="text-sm text-rose-600 hover:text-rose-700 font-medium transition">Logout</button>`;
+            } else {
+                authArea.innerHTML = `<button onclick="quickLogin()" class="text-sm bg-white px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium transition shadow-sm">Demo Login</button>`;
+            }
+        }
+
+        async function quickLogin() {
+            const email = prompt("Enter email:");
+            const password = prompt("Enter password:");
+            if (!email || !password) return;
+            try {
+                const res = await axios.post(`${API_BASE}/auth/login`, { email, password });
+                currentToken = res.data.token;
+                localStorage.setItem('jwt', currentToken);
+                checkAuth();
+                loadProjects();
+            } catch (err) {
+                alert("Login failed: " + (err.response?.data?.error || err.message));
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('jwt');
+            currentToken = null;
+            checkAuth();
+            loadProjects();
+        }
+
+        async function loadProjects(tag = '') {
+            try {
+                const url = tag ? `${API_BASE}/projects?tag=${tag}` : `${API_BASE}/projects`;
+                const res = await axios.get(url);
+                const grid = document.getElementById('projectGrid');
+                grid.innerHTML = '';
+                
+                if(res.data.length === 0) {
+                    grid.innerHTML = `
+                        <div class="col-span-2 py-16 text-center bg-white border border-slate-200 rounded-2xl shadow-sm">
+                            <p class="text-slate-600 text-sm font-medium">No projects found.</p>
+                            <p class="text-slate-400 text-xs mt-1">Try selecting a different filter or post a new project!</p>
+                        </div>`;
+                    return;
+                }
+
+                res.data.forEach(p => {
+                    const badges = p.techStack.split(',').map(t => `<span class="bg-emerald-50 text-emerald-700 text-xs px-2.5 py-1 rounded-lg border border-emerald-200 font-medium">${t.trim()}</span>`).join(' ');
+                    grid.innerHTML += `
+                        <div class="bg-white border border-slate-200/80 rounded-2xl p-6 flex flex-col justify-between space-y-4 hover:border-slate-300 hover:shadow-md transition-all duration-200 shadow-sm">
+                            <div>
+                                <h3 class="font-bold text-base text-slate-900 tracking-tight">${p.title}</h3>
+                                <p class="text-slate-600 text-sm mt-2 line-clamp-3 leading-relaxed">${p.description}</p>
+                            </div>
+                            <div class="flex flex-wrap gap-1.5">${badges}</div>
+                            <div class="flex items-center justify-between pt-4 border-t border-slate-100 text-xs text-slate-500">
+                                <span>By <b class="text-slate-700">${p.author ? p.author.username : 'Developer'}</b></span>
+                                ${p.repoUrl ? `<a href="${p.repoUrl}" target="_blank" class="text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-1 transition">GitHub Repo &rarr;</a>` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+            } catch (err) {
+                console.error("Error loading projects", err);
+            }
+        }
+
+        function filterProjects(tag, btn) {
+            document.querySelectorAll('.filter-btn').forEach(b => {
+                b.classList.remove('bg-emerald-50', 'text-emerald-600', 'border', 'border-emerald-200', 'font-medium');
+                b.classList.add('text-slate-600');
+            });
+            if(btn) {
+                btn.classList.add('bg-emerald-50', 'text-emerald-600', 'border', 'border-emerald-200', 'font-medium');
+                btn.classList.remove('text-slate-600');
+            }
+            loadProjects(tag);
+        }
+
+        function openModal() {
+            if(!currentToken) {
+                alert("Please log in first!");
+                quickLogin();
+                return;
+            }
+            document.getElementById('projectModal').classList.remove('hidden');
+            document.getElementById('projectModal').classList.add('flex');
+        }
+
+        function closeModal() {
+            document.getElementById('projectModal').classList.remove('flex');
+            document.getElementById('projectModal').classList.add('hidden');
+        }
+
+        async function submitProject() {
+            const title = document.getElementById('pTitle').value;
+            const description = document.getElementById('pDesc').value;
+            const techStack = document.getElementById('pTech').value;
+            const repoUrl = document.getElementById('pRepo').value;
+
+            try {
+                await axios.post(`${API_BASE}/projects`, { title, description, techStack, repoUrl });
+                closeModal();
+                loadProjects();
+            } catch (err) {
+                alert("Error creating project: " + (err.response?.data?.error || err.message));
+            }
+        }
+
+        checkAuth();
+        loadProjects();
+    </script>
+</body>
+</html>
